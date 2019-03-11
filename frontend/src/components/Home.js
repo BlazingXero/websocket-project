@@ -144,7 +144,24 @@ class Home extends Component {
 		this.setState({ chatroomDialogOpen: true });
 	}
 
-	handleChatroomDialogClose = () => {
+	handleChatroomDialogClose = (data, type) => {
+		if (type === 'create') {
+			this.onNewChatroom(data, () => {
+				this.onJoinChatroom(data._id);
+				this.getChatroomsJoined(this.props.auth.user, () => {
+					this.loadChatroom(this.state.chatroomJoined[data._id])
+				});
+
+			})
+		} else if (type === 'join') {
+			this.onJoinChatroom(data);
+			this.getChatroomsJoined(this.props.auth.user, () => {
+				this.loadChatroom(this.state.chatroomJoined[data])
+			});
+
+		}
+
+
 		this.setState({ chatroomDialogOpen: false });
 	}
 
@@ -165,6 +182,7 @@ class Home extends Component {
 				chatroomDetails[chatroom._id] = chatroom
 			});
 			this.setState({chatroomJoined: chatroomDetails});
+			callback(null)
 		})
 	}
 
@@ -182,6 +200,14 @@ class Home extends Component {
 
 	loadChatroom = (chatroom) => {
 		this.setState({currentChatroom: chatroom})
+	}
+
+	onNewChatroom = (chatroom, callback) => {
+		Socket.socketNewChatroom(chatroom, callback)
+	}
+
+	onJoinChatroom = (chatroomId) => {
+		Socket.socketJoin(chatroomId, null)
 	}
 
 	render() {
@@ -225,7 +251,9 @@ class Home extends Component {
 					maxWidth="sm"
 					fullWidth={true}
 				>
-					<NewChatroomDialog closeDialog={this.handleChatroomDialogClose}/>
+					<NewChatroomDialog
+						closeDialog={this.handleChatroomDialogClose}
+					/>
 				</Dialog>
 			</div>
 		);

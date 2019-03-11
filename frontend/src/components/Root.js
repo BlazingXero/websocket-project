@@ -67,15 +67,6 @@ class Root extends Component {
 
 	}
 
-	onNewChatroom = (chatroom, callback) => {
-		Socket.socketNewChatroom(chatroom, callback)
-	}
-
-	onJoinChatroom = (chatroomId) => {
-		console.log("chatroomId", chatroomId);
-		Socket.socketJoin(chatroomId, null)
-	}
-
 	registerMessageHandler = (message) => {
 		Socket.registerMessageHandler(message)
 	}
@@ -97,20 +88,7 @@ class Root extends Component {
 					<div style={{height: 'calc(100% - 65px)'}}>
 						<Route exact path="/" render={
 							props => (
-								<Home
-									onNewChatroom={
-										(chatroom, callback) => this.onNewChatroom(chatroom, callback)
-									}
-									onJoinChatroom={
-										(chatroomId) => this.onJoinChatroom(chatroomId)
-									}
-									onEnterChatroom={
-										chatroom => props.history.push({
-											pathname: '/chatroom/'+chatroom._id,
-											state: { chatroom: chatroom, user: this.state.user }
-										})
-									}
-								/>
+								<Home />
 							)
 						} />
 						<Route exact path="/register" component={ Register } />
@@ -118,7 +96,7 @@ class Root extends Component {
 						<Route exact path="/profile" component={ Profile } />
 						<Route path="/chatroom/:chatroomId" render={
 							props => (
-								<Chatroom/>
+								<Chatroom />
 							)}/>
 					</div>
 				</div>

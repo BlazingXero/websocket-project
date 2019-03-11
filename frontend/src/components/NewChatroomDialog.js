@@ -161,12 +161,8 @@ class NewChatroomDialog extends Component {
 		this.props.createChatroom(chatroom, (response) => {
 			if (response && response.data) {
 				const newChatroom = response.data;
-				this.props.onNewChatroom(newChatroom, () => {
-					this.props.onJoinChatroom(newChatroom._id);
-					this.getChatroomsJoined(this.props.auth.user);
-					this.setState({ title: '', description: '', shareCode: '' });
-					this.props.closeDialog();
-				})
+				this.setState({ title: '', description: '', shareCode: '' });
+				this.props.closeDialog(newChatroom, 'create');
 			}
 		});
 	}
@@ -179,10 +175,9 @@ class NewChatroomDialog extends Component {
 		this.props.joinUsingCode(data, (response) => {
 			if (response && response.data) {
 				const chatroomId = response.data.chatroomId
-				this.props.onJoinChatroom(chatroomId);
-				this.getChatroomsJoined(this.props.auth.user);
+
 				this.setState({ title: '', description: '', shareCode: '' });
-				this.props.closeDialog();
+				this.props.closeDialog(chatroomId, 'join');
 			}
 		})
 	}
