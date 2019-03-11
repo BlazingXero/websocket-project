@@ -147,7 +147,6 @@ class Chatroom extends React.Component {
 	constructor(props, context) {
 		super(props, context)
 		this.shareCode = React.createRef();
-		console.log("props", props);
 
 		this.state = {
 			chatroomId: null,
@@ -212,9 +211,7 @@ class Chatroom extends React.Component {
 				this.setState({user: this.props.auth.user})
 				const memberData = [];
 				this.getCurrentOnlineMembers(null, (memberList) => {
-					console.log("memberList", memberList);
 					_.each(response.data, function (d) {
-						console.log("d", d);
 						memberData[d.id] = d
 						const userOnline = _.findWhere(memberList, {_id: d.id});
 						if (userOnline) {
@@ -224,8 +221,6 @@ class Chatroom extends React.Component {
 					this.setState({members: memberData})
 				});
 
-
-				console.log("memberData", memberData);
 				this.joinChatroom();
 			}
 		});
@@ -345,7 +340,6 @@ class Chatroom extends React.Component {
 										let timeText = '';
 										let dateDivider = '';
 										if (time) {
-											console.log(time, message, moment(time).diff(moment(), 'days'))
 											let thisDate = moment(time).format("MM/DD/YY");
 											if (currentDate !== thisDate) {
 

@@ -68,7 +68,6 @@ class Profile extends Component {
 	}
 
 	componentWillReceiveProps = (nextProps) => {
-		console.log("nextProps", nextProps);
 		if(nextProps.errors) {
 			this.setState({
 				errors: nextProps.errors

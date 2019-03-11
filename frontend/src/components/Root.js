@@ -52,7 +52,6 @@ class Root extends Component {
 		if(this.props.auth.isAuthenticated) {
 			this.state.user = this.props.auth.user;
 			Socket.socketRegister(this.state.user.id)
-			// console.log("this.state.user", this.state.user);
 		} else {
 			this.props.history.push('/login')
 		}
@@ -60,7 +59,7 @@ class Root extends Component {
 
 	componentWillReceiveProps = (nextProps) => {
 		if(nextProps.auth.isAuthenticated) {
-			console.log("nextProps.auth.user", nextProps.auth.user.id);
+			// console.log("nextProps.auth.user", nextProps.auth.user.id);
 		}
 	}
 

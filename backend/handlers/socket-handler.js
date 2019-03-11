@@ -73,7 +73,6 @@ module.exports = function (client, clientManager, chatroomManager) {
 	}
 
 	function handleJoin(chatroomId, callback) {
-		console.log("chatroomId", chatroomId);
 		const createEntry = () => ({ event: `joined` })
 
 		handleEvent(chatroomId, createEntry)
@@ -116,7 +115,6 @@ module.exports = function (client, clientManager, chatroomManager) {
 	}
 
 	function handleCurrentOnlineMembers (chatroomId, callback) {
-		console.log("chatroomId", chatroomId);
 		const currentChatroom = chatroomManager.getChatroomByName(chatroomId);
 		const members = currentChatroom.getMembers();
 		const memberList = [];

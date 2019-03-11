@@ -73,7 +73,6 @@ router.post('/login', (req, res) => {
 
 	User.findOne({email})
 		.then(user => {
-			console.log("user", user);
 			if(!user) {
 				errors.email = 'User not found'
 				return res.status(404).json(errors);
@@ -126,7 +125,6 @@ router.post('/update', (req, res) => {
 			email: req.body.email,
 			avatar: req.body.avatar
 		}
-		console.log("payload", payload);
 		jwt.sign(payload, 'secret', {
 			expiresIn: 3600
 		}, (err, token) => {
