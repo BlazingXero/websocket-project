@@ -4,10 +4,13 @@ import { withStyles } from '@material-ui/core/styles';
 import { withRouter } from 'react-router-dom';
 import { connect } from 'react-redux';
 import _ from 'underscore';
+import Moment from 'react-moment';
+import moment from 'moment'
+import 'moment-timezone';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 
 import socket from '../actions/socket'
-import { getChatroomMembers, leaveChatroom, createShareCode } from '../actions/chatroom';
+import { getChatroomMembers, leaveChatroom, createShareCode, updateChatroomData } from '../actions/chatroom';
 
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
@@ -17,23 +20,29 @@ import Avatar from '@material-ui/core/Avatar';
 import Divider from '@material-ui/core/Divider';
 import TextField from '@material-ui/core/TextField';
 import Fab from '@material-ui/core/Fab';
-import MessageIcon from '@material-ui/icons/Message';
 import IconButton from '@material-ui/core/IconButton';
-import KeyboardArrowDown from '@material-ui/icons/KeyboardArrowDown';
 import Menu from '@material-ui/core/Menu'
 import MenuItem from '@material-ui/core/MenuItem';
-import ShareIcon from '@material-ui/icons/Share';
-import ExitToApp from '@material-ui/icons/ExitToApp';
 import Dialog from '@material-ui/core/Dialog';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import InputAdornment from '@material-ui/core/InputAdornment';
+
+import MessageIcon from '@material-ui/icons/Message';
+import KeyboardArrowDown from '@material-ui/icons/KeyboardArrowDown';
+import ShareIcon from '@material-ui/icons/Share';
+import ExitToApp from '@material-ui/icons/ExitToApp';
 import FileCopy from '@material-ui/icons/FileCopy';
 import CloseIcon from '@material-ui/icons/Close';
+import PeopleIcon from '@material-ui/icons/People';
 
 const Socket = socket();
 
 const styles = theme => ({
+	chatContainer: {
+		display: 'flex',
+		width: '100%'
+	},
 	button: {
 		margin: theme.spacing.unit,
 	},
@@ -46,12 +55,10 @@ const styles = theme => ({
 		flexDirection: 'column',
 		justifyContent: 'flex-end',
 		height: '100%',
-		width: '80%',
 		boxSizing: 'border-box',
-		border: '2px solid #eee',
-		borderTopLeftRadius: '10px',
-		borderBottomLeftRadius: '10px'
-
+		borderLeft: '2px solid #eee',
+		borderRight: '2px solid #eee',
+		flex: '1'
 	},
 	header: {
 		display: 'flex',
@@ -105,16 +112,34 @@ const styles = theme => ({
 	memberList: {
 		width: '20%',
 		height: '100%',
-		border: '2px solid #eee',
-		borderLeft: 'none',
-		borderTopRightRadius: '10px',
-		borderBottomRightRadius: '10px'
 	},
 	closeButton: {
 		position: 'absolute',
 		right: theme.spacing.unit,
 		top: theme.spacing.unit,
 		color: theme.palette.grey[500],
+	},
+	time: {
+		position: 'absolute',
+		right: '5px',
+		bottom: '0px',
+		fontSize: '0.6em',
+		color: '#BBB'
+	},
+	dateDivider: {
+		padding: '0 5px',
+		display: 'inline-block',
+		border: '1px solid #BBB',
+		borderRadius: '5px',
+		marginTop: '5px',
+		color: '#bbb',
+	},
+	chatActions: {
+		flex: '0 0 30px'
+	},
+	centreIcon: {
+		display: 'block',
+		margin: 'auto'
 	}
 });
 
@@ -131,6 +156,7 @@ class Chatroom extends React.Component {
 			input: '',
 			anchorEl: null,
 			members: [],
+			showMembers: true,
 			shareCodeDialogOpen: false,
 			currentShareCode: ''
 		}
@@ -145,33 +171,12 @@ class Chatroom extends React.Component {
 		this.leaveChat = this.leaveChat.bind(this);
 		this.closeShareCodeDialog = this.closeShareCodeDialog.bind(this);
 		this.createShareCode = this.createShareCode.bind(this);
+		this.toggleShowMembers = this.toggleShowMembers.bind(this);
 	}
 
 	componentDidMount = () => {
 		Socket.registerMessageHandler(this.onMessageReceived);
 		Socket.registerUserOnlineStatusChange(this.userOnlineStatusChange);
-
-		this.scrollChatToBottom();
-		console.log(this.props.location.state.chatroom._id)
-		this.props.getChatroomMembers({chatroomId: this.props.location.state.chatroom._id}, (response) => {
-			if (response && response.data) {
-				this.setState({chatroom: this.props.location.state.chatroom})
-				this.setState({user: this.props.location.state.user})
-				const memberData = [];
-				this.getCurrentOnlineMembers(null, function (memberList) {
-					_.each(response.data, function (d) {
-						memberData[d.id] = d
-						const userOnline = _.findWhere(memberList, {_id: d.id});
-						if (userOnline) {
-							memberData[d.id].online = true;
-						}
-					});
-				});
-
-				this.setState({members: memberData})
-				this.joinChatroom();
-			}
-		});
 	}
 
 	componentDidUpdate() {
@@ -180,10 +185,50 @@ class Chatroom extends React.Component {
 
 	componentWillUnmount() {
 		Socket.unregisterHandler();
-		Socket.socketExitChatroom(this.state.chatroom._id);
+		if (this.state.chatroom && this.state.chatroom._id) {
+			Socket.socketExitChatroom(this.state.chatroom._id);
+
+			this.props.updateChatroomData({
+				chatroomId: this.state.chatroom._id,
+				userId: this.state.user.id,
+				messagesRead: this.state.chatHistory.length
+			});
+		}
 	}
 
 	componentWillReceiveProps = (nextProps) => {
+		if (nextProps.chatroom) {
+			this.setState({ chatroom: null });
+			this.setState({ chatHistory: [] });
+			this.setState({ members: [] });
+			this.populateChatroom(nextProps.chatroom)
+		}
+	}
+
+	populateChatroom = (chatroom) => {
+		this.props.getChatroomMembers({chatroomId: chatroom._id}, (response) => {
+			if (response && response.data) {
+				this.setState({chatroom: chatroom})
+				this.setState({user: this.props.auth.user})
+				const memberData = [];
+				this.getCurrentOnlineMembers(null, (memberList) => {
+					console.log("memberList", memberList);
+					_.each(response.data, function (d) {
+						console.log("d", d);
+						memberData[d.id] = d
+						const userOnline = _.findWhere(memberList, {_id: d.id});
+						if (userOnline) {
+							memberData[d.id].online = true;
+						}
+					});
+					this.setState({members: memberData})
+				});
+
+
+				console.log("memberData", memberData);
+				this.joinChatroom();
+			}
+		});
 	}
 
 	getCurrentOnlineMembers = (_, callback) => {
@@ -194,12 +239,6 @@ class Chatroom extends React.Component {
 		Socket.socketEnterChatroom(this.state.chatroom._id, (chatHistory) => {
 			this.setState({chatHistory: chatHistory})
 		})
-	}
-
-	getChatHistory = () => {
-		Socket.socketGetChatHistory(this.state.chatroom._id, (chatHistory) => {
-			this.setState({chatHistory: chatHistory})
-		});
 	}
 
 	onInput(e) {
@@ -221,17 +260,18 @@ class Chatroom extends React.Component {
 		this.updateChatHistory(entry)
 	}
 
-
 	userOnlineStatusChange ({user, status}) {
-		this.setState({
-			members: {
-				...this.state.members,
-				[user._id]: {
-					...this.state.members[user._id],
-					online: status
-				}
-			},
-		});
+		if (this.state.chatroom) {
+			this.setState({
+				members: {
+					...this.state.members,
+					[user._id]: {
+						...this.state.members[user._id],
+						online: status
+					}
+				},
+			});
+		}
 	}
 
 	leaveChat = () => {
@@ -241,11 +281,11 @@ class Chatroom extends React.Component {
 		})
 	}
 
-	updateChatHistory(entry) {
+	updateChatHistory = (entry) => {
 		this.setState({ chatHistory: this.state.chatHistory.concat(entry) })
 	}
 
-	scrollChatToBottom() {
+	scrollChatToBottom = () => {
 		this.panel.scrollTo(0, this.panel.scrollHeight)
 	}
 
@@ -266,44 +306,77 @@ class Chatroom extends React.Component {
 		});
 	}
 
-	closeShareCodeDialog () {
+	closeShareCodeDialog = () => {
 		this.setState({ shareCodeDialogOpen: false })
+	}
+
+	toggleShowMembers = () => {
+		this.setState({ showMembers: !this.state.showMembers })
 	}
 
 	render() {
 		const { classes } = this.props;
 		const { anchorEl } = this.state;
 
+		let currentDate;
+
 		return (
-			<div style={{ height: '85vh', display: 'flex', 'marginTop': '10px' }}>
+			<div className={classes.chatContainer}>
 				<div className={classes.chatWindow}>
 					<div className={classes.header}>
-						<p className={classes.title}>
-							{this.state.chatroom ? this.state.chatroom.title : ''}
-						</p>
+						<div>
+							<p className={classes.title}>
+								{this.state.chatroom ? this.state.chatroom.title : ''}
+							</p>
+						</div>
+						{this.state.chatroom ?
+							<div className={classes.chatActions}>
+								<PeopleIcon className={classes.centreIcon} onClick={this.toggleShowMembers}/>
+							</div>
+						:
+							''
+						}
 					</div>
 					<div className={classes.chatPanel}>
 						<div className={classes.scrollable} ref={(panel) => { this.panel = panel; }}>
 							<List>
 								{this.state.chatHistory.map(
-									({ user, message, event }, i) => [
-										<div key={i}>
-											<ListItem>
-												<ListItemAvatar>
-													<Avatar alt={user.username} src={user.avatar} />
-												</ListItemAvatar>
-												<ListItemText
-													primary={`${user.username} ${event || ''}`}
-													secondary={
-														<React.Fragment>
-															{message}
-														</React.Fragment>
-													}
-												/>
-											</ListItem>
-											<Divider variant="inset" component="li" />
-										</div>
-									]
+									({ user, message, time, event }, i) => {
+										let timeText = '';
+										let dateDivider = '';
+										if (time) {
+											console.log(time, message, moment(time).diff(moment(), 'days'))
+											let thisDate = moment(time).format("MM/DD/YY");
+											if (currentDate !== thisDate) {
+
+												dateDivider = <div style={{ textAlign: 'center' }}><span className={classes.dateDivider}>{thisDate}</span></div>
+												currentDate = thisDate
+											} else {
+												dateDivider = '';
+											}
+											timeText = <Moment className={classes.time} format="hh:mm A">{time}</Moment>
+										}
+										return [
+											<div key={i}>
+												{dateDivider}
+												<ListItem>
+													<ListItemAvatar>
+														<Avatar alt={user.username} src={user.avatar} />
+													</ListItemAvatar>
+													<ListItemText
+														primary={`${user.username} ${event || ''}`}
+														secondary={
+															<span style={{whiteSpace: 'pre-line'}}>
+																{message}
+															</span>
+														}
+													/>
+													{timeText}
+												</ListItem>
+												<Divider variant="inset" component="li" />
+											</div>
+										]
+									}
 								)}
 							</List>
 						</div>
@@ -325,60 +398,69 @@ class Chatroom extends React.Component {
 						</div>
 					</div>
 				</div>
-				<div className={classes.memberList}>
-					<div style={{ 'textAlign': 'right' }}>
-						<IconButton aria-label="Settings" onClick={this.openMenuOptions}>
-							<KeyboardArrowDown fontSize="small" />
-						</IconButton>
+				{ this.state.chatroom && this.state.showMembers ?
+					<div className={classes.memberList}>
+						<div style={{ 'textAlign': 'right' }}>
+							<IconButton aria-label="Settings" onClick={this.openMenuOptions}>
+								<KeyboardArrowDown fontSize="small" />
+							</IconButton>
+						</div>
+						<div>
+							ONLINE ({_.where(this.state.members, {online: true}).length}):
+							<List className={classes.root}>
+								{Object.keys(this.state.members).map(
+									(userId, i) => {
+									return this.state.members[userId].username && this.state.members[userId].online ?
+											[<div key={i}>
+												<ListItem>
+													<ListItemAvatar>
+														<Avatar alt={this.state.members[userId].username} src={this.state.members[userId].avatar} />
+													</ListItemAvatar>
+													<ListItemText
+														primary={`${this.state.members[userId].username}`}
+													/>
+												</ListItem>
+											</div>]
+										: ''
+									}
+								)}
+							</List>
+						</div>
+						<div>
+							OFFLINE ({_.where(this.state.members, {online: false}).length}):
+							<List className={classes.root}>
+								{Object.keys(this.state.members).map(
+									(userId, i) => {
+									return this.state.members[userId].username && !this.state.members[userId].online ?
+											[<div key={i}>
+												<ListItem>
+													<ListItemAvatar>
+														<Avatar alt={this.state.members[userId].username} src={this.state.members[userId].avatar} />
+													</ListItemAvatar>
+													<ListItemText
+														primary={`${this.state.members[userId].username}`}
+													/>
+												</ListItem>
+											</div>]
+										: ''
+									}
+								)}
+							</List>
+						</div>
 					</div>
-					<div>
-						ONLINE ({_.where(this.state.members, {online: true}).length}):
-						<List className={classes.root}>
-							{Object.keys(this.state.members).map(
-								(userId, i) => {
-								return this.state.members[userId].online ?
-										[<div key={i}>
-											<ListItem>
-												<ListItemAvatar>
-													<Avatar alt={this.state.members[userId].username} src={this.state.members[userId].avatar} />
-												</ListItemAvatar>
-												<ListItemText
-													primary={`${this.state.members[userId].username}`}
-												/>
-											</ListItem>
-										</div>]
-									: ''
-								}
-							)}
-						</List>
-					</div>
-					<div>
-						OFFLINE ({_.where(this.state.members, {online: false}).length}):
-						<List className={classes.root}>
-							{Object.keys(this.state.members).map(
-								(userId, i) => {
-								return !this.state.members[userId].online ?
-										[<div key={i}>
-											<ListItem>
-												<ListItemAvatar>
-													<Avatar alt={this.state.members[userId].username} src={this.state.members[userId].avatar} />
-												</ListItemAvatar>
-												<ListItemText
-													primary={`${this.state.members[userId].username}`}
-												/>
-											</ListItem>
-										</div>]
-									: ''
-								}
-							)}
-						</List>
-					</div>
-				</div>
+				:
+					null
+				}
 				<Menu
 					id="long-menu"
 					anchorEl={anchorEl}
 					open={Boolean(anchorEl)}
 					onClose={this.handleClose}
+					anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+					transformOrigin={{
+						vertical: 'top',
+						horizontal: 'right',
+					}}
 				>
 					<MenuItem onClick={() => this.createShareCode()}>
 						<ShareIcon />
@@ -429,9 +511,11 @@ class Chatroom extends React.Component {
 }
 
 Chatroom.propTypes = {
+	auth: PropTypes.object.isRequired,
 	classes: PropTypes.object.isRequired,
 };
 
 const mapStateToProps = (state) => ({
+	auth: state.auth,
 })
-export default withRouter(connect(mapStateToProps, { getChatroomMembers, leaveChatroom, createShareCode })(withStyles(styles)(Chatroom)))
+export default withRouter(connect(mapStateToProps, { getChatroomMembers, leaveChatroom, createShareCode, updateChatroomData })(withStyles(styles)(Chatroom)))

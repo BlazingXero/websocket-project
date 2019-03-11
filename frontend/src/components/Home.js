@@ -2,29 +2,38 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'underscore'
 import { connect } from 'react-redux';
-import { loginUser } from '../actions/authentication';
-import { createChatroom, getJoinedChatrooms, joinUsingCode } from '../actions/chatroom';
+import { getJoinedChatrooms } from '../actions/chatroom';
 import { withRouter } from 'react-router-dom';
+import socket from '../actions/socket'
 
 import { withStyles } from '@material-ui/core/styles';
-import TextField from '@material-ui/core/TextField';
-import Button from '@material-ui/core/Button';
 import Dialog from '@material-ui/core/Dialog';
-import DialogActions from '@material-ui/core/DialogActions';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogContentText from '@material-ui/core/DialogContentText';
-import DialogTitle from '@material-ui/core/DialogTitle';
 
-import Paper from '@material-ui/core/Paper';
-import Card from '@material-ui/core/Card';
-import CardActionArea from '@material-ui/core/CardActionArea';
-import CardContent from '@material-ui/core/CardContent';
-import CardMedia from '@material-ui/core/CardMedia';
-import Typography from '@material-ui/core/Typography';
-import IconButton from '@material-ui/core/IconButton';
-import CloseIcon from '@material-ui/icons/Close';
+import AddCircleOutlinedIcon from '@material-ui/icons/AddCircleOutlined';
+
+import List from '@material-ui/core/List';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemText from '@material-ui/core/ListItemText';
+import ListItemAvatar from '@material-ui/core/ListItemAvatar';
+import Avatar from '@material-ui/core/Avatar';
+import Divider from '@material-ui/core/Divider';
+
+import Chatroom from './Chatroom';
+import NewChatroomDialog from './NewChatroomDialog'
+
+const Socket = socket();
 
 const styles = theme => ({
+	chatroomContainer: {
+		display: 'flex',
+		height: '100%'
+	},
+	chatroomList: {
+		flex: '0 1 300px',
+	},
+	chatroomMain: {
+		flex: '1 1 auto'
+	},
 	textField: {
 		width: '100%',
 	},
@@ -44,6 +53,50 @@ const styles = theme => ({
 		right: theme.spacing.unit,
 		top: theme.spacing.unit,
 		color: theme.palette.grey[500],
+	},
+	actions: {
+		margin: '5px'
+	},
+	button: {
+		margin: theme.spacing.unit,
+	},
+	input: {
+		display: 'none',
+	},
+	centreIcon: {
+		display: 'block',
+		margin: 'auto'
+	},
+	newChatroomOption: {
+		border: '1px solid #eee',
+		borderRadius: '5px',
+		display: 'inline-block',
+		width: '40%',
+		margin: '0 15px',
+		textAlign: 'center',
+		padding: '25px 13px',
+		cursor: 'pointer'
+	},
+	floatCircle: {
+		height: '60px',
+		width: '60px',
+		borderRadius: '50%',
+		border: '1px solid #eee',
+		position: 'absolute',
+		left: '50%',
+		transform: 'translate(-50%, -50%)',
+		top: '50%',
+		backgroundColor: '#fff',
+	},
+	floatRect: {
+		position: 'absolute',
+		height: '60px',
+		width: '30px',
+		backgroundColor: '#FFF',
+		lineHeight: '60px',
+		top: '50%',
+		left: '50%',
+		transform: 'translate(-50%, -50%)',
 	}
 });
 
@@ -52,17 +105,15 @@ class Home extends Component {
 	constructor() {
 		super();
 		this.state = {
-			title: '',
-			description: '',
-			errors: {},
+			user: null,
 			chatroomJoined: [],
 			chatroomDialogOpen: false,
-			chatroomCreated: false,
-			joinUsingCodeDialogOpen: false,
-			shareCode: '',
+			currentChatroom: null,
 		}
+
 		this.handleInputChange = this.handleInputChange.bind(this);
-		this.handleSubmit = this.handleSubmit.bind(this);
+		this.onMessageReceived = this.onMessageReceived.bind(this);
+		this.loadChatroom = this.loadChatroom.bind(this);
 	}
 
 	handleInputChange = (e) => {
@@ -71,23 +122,8 @@ class Home extends Component {
 		})
 	}
 
-	handleClickShowPassword = (e) => {
-		this.setState({
-			[e.currentTarget.name]: !this.state[e.currentTarget.name]
-		})
-	}
-
-	handleSubmit = (e) => {
-		e.preventDefault();
-		const user = {
-			email: this.state.email,
-			password: this.state.password,
-		}
-
-		this.props.loginUser(user);
-	}
-
 	componentDidMount = () => {
+		Socket.registerMessageHandler(this.onMessageReceived);
 		this.getChatroomsJoined(this.props.auth.user)
 	}
 
@@ -99,201 +135,104 @@ class Home extends Component {
 		}
 	}
 
+	componentWillUnmount() {
+		Socket.unregisterHandler();
+	}
+
 	onCreateChatroomDialog = (e) => {
 		e.preventDefault();
 		this.setState({ chatroomDialogOpen: true });
 	}
 
-	onJoinUsingCode = (e) => {
-		e.preventDefault();
-		this.setState({ joinUsingCodeDialogOpen: true });
-	}
-
 	handleChatroomDialogClose = () => {
 		this.setState({ chatroomDialogOpen: false });
-		this.setState({ title: '' });
-		this.setState({ description: '' });
-	}
-
-	handleCreateChatroom = () => {
-		const chatroom = {
-			creatorId: this.props.auth.user.id,
-			creatorUsername: this.props.auth.user.username,
-			title: this.state.title,
-			description: this.state.description,
-		}
-		this.props.createChatroom(chatroom, (response) => {
-			if (response && response.data) {
-				const newChatroom = response.data;
-				this.props.onNewChatroom(newChatroom, () => {
-					this.props.onJoinChatroom(newChatroom._id)
-					this.getChatroomsJoined(this.props.auth.user)
-					this.handleChatroomDialogClose();
-				})
-			}
-		});
 	}
 
 	getChatroomsJoined = (user, callback) => {
 		const username = user.username;
-		const chatroomDetails = [];
+		const chatroomDetails = {};
 		this.props.getJoinedChatrooms({userId: user.id}, (response) => {
 			_.each(response.data, function (d) {
-				const chatroom = d.chatroom[0];
+				let chatroom = d.chatroom[0];
+				chatroom.messagesRead = d.messagesRead || 0;
+				chatroom.lastRead = d.lastRead;
 				if (chatroom.creatorUsername === username) {
 					chatroom.creatorUsername = "Me";
 				}
-				chatroomDetails.push(chatroom)
+				const numMessages = _.compact(_.pluck(chatroom.chatHistory, 'message')).length
+				chatroom.unreadMessages = numMessages - chatroom.messagesRead;
+				Socket.socketEnterChatroom(chatroom._id)
+				chatroomDetails[chatroom._id] = chatroom
 			});
-			this.setState({chatroomJoined: chatroomDetails})
+			this.setState({chatroomJoined: chatroomDetails});
 		})
 	}
 
-	handleJoinUsingCodeDialogClose = () => {
-		this.setState({ joinUsingCodeDialogOpen: false });
-		this.setState({ shareCode: '' });
-	}
-
-	handleJoinChatroomUsingCode = () => {
-		this.props.joinUsingCode({shareCode: this.state.shareCode, userId: this.props.auth.user.id}, (response) => {
-			if (response && response.data) {
-				const chatroomId = response.data.chatroomId
-				this.props.onJoinChatroom(chatroomId)
-				this.getChatroomsJoined(this.props.auth.user)
-				this.handleJoinUsingCodeDialogClose();
+	onMessageReceived = (entry) => {
+		this.setState((prevState, props) => ({
+			chatroomJoined: {
+				...this.state.chatroomJoined,
+				[entry.chat]: {
+					...this.state.chatroomJoined[entry.chat],
+					unreadMessages: prevState.chatroomJoined[entry.chat].unreadMessages + 1
+				}
 			}
-			console.log(response)
-		})
+		}))
+	}
+
+	loadChatroom = (chatroom) => {
+		this.setState({currentChatroom: chatroom})
 	}
 
 	render() {
 		const { classes } = this.props;
-		const { errors } = this.state;
+		// const { errors } = this.state
 
-		const loggedIn = (
-			<div>
-				Welcome {this.props.auth.user.username} <br />
-				{this.state.chatroomJoined.map(chatroom => (
-					<Paper key={chatroom._id}
-						className={classes.paper}
-						style={{ maxWidth: 400, marginBottom: 40 }}
-						zdepth={5}
-						onClick={() => this.props.onEnterChatroom(chatroom)}
-
-					>
-						<Card className={classes.card}>
-							<CardActionArea>
-								<CardMedia
-									className={classes.media}
-									image={"icons/"+chatroom.icon+".svg"}
-								/>
-								<CardContent>
-									<Typography gutterBottom variant="h5" component="h2">
-										{chatroom.title}
-									</Typography>
-									<Typography component="p">
-										{chatroom.description}
-									</Typography>
-								</CardContent>
-							</CardActionArea>
-						</Card>
-					</Paper>
-				))}
-				<br />
-				<Button
-					variant="contained"
-					color="primary"
-					onClick={(event) => this.onCreateChatroomDialog(event)}
-					>
-					Create Chatroom
-				</Button>
-				 <Button
-					variant="contained"
-					color="primary"
-					onClick={(event) => this.onJoinUsingCode(event)}
-					>
-					Join using code
-				</Button>
+		return (
+			<div className={classes.chatroomContainer}>
+				<div className={classes.chatroomList}>
+					<List component="nav">
+						{Object.keys(this.state.chatroomJoined).map(
+							(chatroomId, i) => {
+								return (
+									<div key={i} onClick={() => this.loadChatroom(this.state.chatroomJoined[chatroomId])}>
+										<ListItem button >
+											<ListItemAvatar>
+												<Avatar alt={this.state.chatroomJoined[chatroomId].title} src={"icons/"+this.state.chatroomJoined[chatroomId].icon+".svg"} />
+											</ListItemAvatar>
+											<ListItemText
+												primary={`${this.state.chatroomJoined[chatroomId].title}`}
+												secondary={`${this.state.chatroomJoined[chatroomId].description}`}
+											/>
+										</ListItem>
+										<Divider />
+									</div>
+								)
+							}
+						)}
+						<div>
+							<ListItem button onClick={(event) => this.onCreateChatroomDialog(event)}>
+								<AddCircleOutlinedIcon className={classes.centreIcon}/>
+							</ListItem>
+						</div>
+					</List>
+				</div>
+				<Chatroom chatroom={this.state.currentChatroom} />
 				<Dialog
 					open={this.state.chatroomDialogOpen}
 					onClose={this.handleChatroomDialogClose}
 					aria-labelledby="form-dialog-title"
+					maxWidth="sm"
+					fullWidth={true}
 				>
-					<DialogTitle id="form-dialog-title">Create Chatroom</DialogTitle>
-					<DialogContent>
-						<TextField
-							autoFocus
-							margin="dense"
-							name="title"
-							label="Title"
-							onChange={this.handleInputChange}
-							value={this.state.title}
-							type="text"
-							error = {!!errors.title}
-							helperText={errors.title}
-							fullWidth
-						/>
-						<TextField
-							margin="dense"
-							name="description"
-							label="Description"
-							onChange={this.handleInputChange}
-							value={this.state.description}
-							type="text"
-							error = {!!errors.description}
-							helperText={errors.description}
-							multiline
-							fullWidth
-						/>
-					</DialogContent>
-					<DialogActions>
-						<Button onClick={this.handleChatroomDialogClose} color="primary">
-							Cancel
-						</Button>
-						<Button onClick={this.handleCreateChatroom} color="primary">
-							Create
-						</Button>
-					</DialogActions>
-				</Dialog>
-				<Dialog
-					open={this.state.joinUsingCodeDialogOpen}
-					onClose={this.handleJoinUsingCodeDialogClose}
-					aria-labelledby="alert-dialog-title"
-					aria-describedby="alert-dialog-description"
-				>
-					<IconButton aria-label="Close" className={classes.closeButton} onClick={this.closeShareCodeDialog}>
-						<CloseIcon />
-					</IconButton>
-					<DialogTitle id="alert-dialog-title">Join using code</DialogTitle>
-					<DialogContent>
-						Enter an invite code to join the chatroom
-						<br />
-						<TextField
-							id="outlined-adornment-password"
-							variant="outlined"
-							type="text"
-							name="shareCode"
-							value={this.state.shareCode}
-							onChange={this.handleInputChange}
-						/>
-					</DialogContent>
-					<DialogActions>
-						<Button onClick={this.handleJoinChatroomUsingCode} color="primary">
-							Join
-						</Button>
-					</DialogActions>
+					<NewChatroomDialog closeDialog={this.handleChatroomDialogClose}/>
 				</Dialog>
 			</div>
-		)
-		return (
-			loggedIn
 		);
 	}
 }
 
 Home.propTypes = {
-	loginUser: PropTypes.func.isRequired,
-	createChatroom: PropTypes.func.isRequired,
 	auth: PropTypes.object.isRequired,
 	errors: PropTypes.object.isRequired
 }
@@ -303,4 +242,4 @@ const mapStateToProps = (state) => ({
 	errors: state.errors
 })
 
-export default withRouter(connect(mapStateToProps,{ loginUser, createChatroom, getJoinedChatrooms, joinUsingCode })(withStyles(styles)(Home)))
+export default withRouter(connect(mapStateToProps,{ getJoinedChatrooms })(withStyles(styles)(Home)))

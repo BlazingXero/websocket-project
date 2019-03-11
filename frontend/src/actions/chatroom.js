@@ -7,7 +7,7 @@ export const createChatroom = (chatroom, callback) => dispatch => {
 		.catch(err => {
 			dispatch({
 				type: GET_ERRORS,
-				payload: err
+				payload: err.response.data
 			});
 	});
 }
@@ -58,6 +58,17 @@ export const createShareCode = (chatroomId, callback) => dispatch => {
 
 export const joinUsingCode = (data, callback) => dispatch => {
 	axios.post('/api/chatroom/join_using_code', data)
+		.then(res => callback(res))
+		.catch(err => {
+			dispatch({
+				type: GET_ERRORS,
+				payload: err.response.data
+			});
+	});
+}
+
+export const updateChatroomData = (data, callback) => dispatch =>{
+	axios.post('/api/chatroom/update_chatroom_data', data)
 		.then(res => callback(res))
 		.catch(err => {
 			dispatch({

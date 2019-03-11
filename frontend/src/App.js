@@ -4,7 +4,7 @@ import { Provider } from 'react-redux';
 import store from './store';
 import jwt_decode from 'jwt-decode';
 import setAuthToken from './setAuthToken';
-import socket from './actions/socket'
+// import socket from './actions/socket'
 import { setCurrentUser, logoutUser } from './actions/authentication';
 
 import Root from './components/Root';
@@ -24,7 +24,7 @@ if(localStorage.jwtToken) {
 		window.location.href = '/login'
 	} else {
 		console.log("logged in")
-		socket().socketRegister(decoded.id)
+		// socket().socketRegister(decoded.id)
 	}
 }
 

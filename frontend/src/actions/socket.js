@@ -57,6 +57,10 @@ export default function () {
 		socket.emit('newChatroom', chatroom, cb)
 	}
 
+	function socketGetChatroomHistory(chatroomId, cb) {
+		socket.emit('getChatroomHistory', chatroomId, cb)
+	}
+
 	return {
 		registerMessageHandler,
 		registerUserOnlineStatusChange,
@@ -70,5 +74,6 @@ export default function () {
 		socketCurrentOnlineMembers,
 		socketMessage,
 		socketNewChatroom,
+		socketGetChatroomHistory
 	}
 }

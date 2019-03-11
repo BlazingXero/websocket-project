@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { loginUser } from '../actions/authentication';
-import socket from '../actions/socket'
+// import socket from '../actions/socket'
 
 import { withStyles } from '@material-ui/core/styles';
 import TextField from '@material-ui/core/TextField';
@@ -64,7 +64,7 @@ class Login extends Component {
 
 	componentWillReceiveProps(nextProps) {
 		if(nextProps.auth.isAuthenticated) {
-			socket().socketRegister(nextProps.auth.user.id)
+			// socket().socketRegister(nextProps.auth.user.id)
 			this.props.history.push('/')
 		}
 		if(nextProps.errors) {
@@ -76,7 +76,7 @@ class Login extends Component {
 
 	render() {
 		const { classes } = this.props;
-		const {errors} = this.state;
+		const { errors } = this.state;
 
 		return(
 		<div className="container" style={{ marginTop: '50px', width: '700px'}}>

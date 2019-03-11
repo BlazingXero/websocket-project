@@ -8,15 +8,20 @@ import socket from '../actions/socket'
 
 import { withStyles } from '@material-ui/core/styles';
 
+import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import Register from './Register';
 import Login from './Login';
 import Home from './Home';
 import Chatroom from './Chatroom';
+import Profile from './Profile';
 
 const Socket = socket();
 
 const styles = theme => ({
+	mainContainer: {
+		padding: '10px'
+	},
 	textField: {
 		width: '100%',
 	},
@@ -46,7 +51,7 @@ class Root extends Component {
 	componentDidMount() {
 		if(this.props.auth.isAuthenticated) {
 			this.state.user = this.props.auth.user;
-			// Socket.socketRegister(this.state.user.id)
+			Socket.socketRegister(this.state.user.id)
 			// console.log("this.state.user", this.state.user);
 		} else {
 			this.props.history.push('/login')
@@ -86,33 +91,37 @@ class Root extends Component {
 
 	render() {
 		return (
-			<div>
-				<Navbar />
-				<div className="container">
-					<Route exact path="/" render={
-						props => (
-							<Home
-								onNewChatroom={
-									(chatroom, callback) => this.onNewChatroom(chatroom, callback)
-								}
-								onJoinChatroom={
-									(chatroomId) => this.onJoinChatroom(chatroomId)
-								}
-								onEnterChatroom={
-									chatroom => props.history.push({
-										pathname: '/chatroom/'+chatroom._id,
-										state: { chatroom: chatroom, user: this.state.user }
-									})
-								}
-							/>
-						)
-					} />
-					<Route exact path="/register" component={ Register } />
-					<Route exact path="/login" component={ Login } />
-					<Route path="/chatroom/:chatroomId" render={
-						props => (
-							<Chatroom/>
-						)}/>
+			<div style={{display: 'flex', height: '100vh'}}>
+				<Sidebar />
+				<div style={{flex: '1'}}>
+					<Navbar />
+					<div style={{height: 'calc(100% - 65px)'}}>
+						<Route exact path="/" render={
+							props => (
+								<Home
+									onNewChatroom={
+										(chatroom, callback) => this.onNewChatroom(chatroom, callback)
+									}
+									onJoinChatroom={
+										(chatroomId) => this.onJoinChatroom(chatroomId)
+									}
+									onEnterChatroom={
+										chatroom => props.history.push({
+											pathname: '/chatroom/'+chatroom._id,
+											state: { chatroom: chatroom, user: this.state.user }
+										})
+									}
+								/>
+							)
+						} />
+						<Route exact path="/register" component={ Register } />
+						<Route exact path="/login" component={ Login } />
+						<Route exact path="/profile" component={ Profile } />
+						<Route path="/chatroom/:chatroomId" render={
+							props => (
+								<Chatroom/>
+							)}/>
+					</div>
 				</div>
 			</div>
 		)
