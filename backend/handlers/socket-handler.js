@@ -41,7 +41,7 @@ function makeHandleEvent(client, clientManager, chatroomManager) {
 		return ensureValidChatroomAndUserSelected(chatroomId)
 			.then(function ({ chatroom, user }) {
 				// append event to chat history
-				const entry = { user, ...createEntry() }
+				const entry = { user, ...createEntry(), time: new Date() }
 				chatroom.addEntry(entry)
 
 				// update record in db
@@ -99,9 +99,10 @@ module.exports = function (client, clientManager, chatroomManager) {
 	function handleEnterChatroom (chatroomId, callback) {
 		const currentChatroom = chatroomManager.getChatroomByName(chatroomId);
 		currentChatroom.addUser(client, clientManager);
-		return chatroomManager.getChatHistory(chatroomId, callback);
+		if (callback) {
+			return chatroomManager.getChatHistory(chatroomId, callback);
+		}
 	}
-
 
 	function handleExitChatroom (chatroomId) {
 		const currentChatroom = chatroomManager.getChatroomByName(chatroomId);
@@ -122,6 +123,7 @@ module.exports = function (client, clientManager, chatroomManager) {
 		members.forEach((m, clientId) => {
 			const userDetails = clientManager.getUserDetails(clientId)
 			memberList.push(userDetails)
+
 		});
 
 		return callback(memberList);

@@ -10,6 +10,12 @@ const ChatroomJoinedSchema = new Schema({
     userId: {
         type: String,
         required: true
+    },
+    messagesRead: {
+    	type: Number
+    },
+    lastRead: {
+    	type: Date
     }
 }, {
 	collection: 'chatroomjoined'
