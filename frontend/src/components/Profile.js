@@ -1,13 +1,21 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 // import _ from 'underscore'
 import { connect } from 'react-redux';
 import { updateUser } from '../actions/authentication';
 import { withRouter } from 'react-router-dom';
-
 import { withStyles } from '@material-ui/core/styles';
+
+import green from '@material-ui/core/colors/green';
+
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
+import Snackbar from '@material-ui/core/Snackbar';
+import SnackbarContent from '@material-ui/core/SnackbarContent';
+import IconButton from '@material-ui/core/IconButton';
+import CloseIcon from '@material-ui/icons/Close';
+import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 
 const styles = theme => ({
 	textField: {
@@ -32,6 +40,19 @@ const styles = theme => ({
 	},
 	actions: {
 		margin: '5px'
+	},
+	success: {
+		backgroundColor: green[600],
+	},
+	message: {
+		display: 'flex',
+		alignItems: 'center',
+	},
+	icon: {
+		fontSize: 20,
+	},
+	iconVariant: {
+		marginRight: theme.spacing.unit
 	}
 });
 
@@ -48,11 +69,13 @@ class Profile extends Component {
 				email: '',
 			},
 			errors: {},
+			showSuccess: false,
 			currentUserProfile: null
 		}
 		this.handleInputChange = this.handleInputChange.bind(this);
 		// this.updateProfile = this.updateProfile.bind(this);
 		this.cancelUpdate = this.cancelUpdate.bind(this);
+		this.handleCloseSuccess = this.handleCloseSuccess.bind(this);
 	}
 
 	handleInputChange = (e) => {
@@ -85,7 +108,7 @@ class Profile extends Component {
 		this.props.updateUser(this.state.user, (res) => {
 			console.log("res", res);
 			this.setState({ edit: false })
-
+			this.setState({ showSuccess: true })
 		});
 		//
 	}
@@ -97,8 +120,17 @@ class Profile extends Component {
 		this.setState({ edit: false })
 	}
 
+	handleCloseSuccess = (event, reason) => {
+		if (reason === 'clickaway') {
+			return;
+		}
+
+		this.setState({ showSuccess: false });
+	}
+
 	render() {
-		// const { classes } = this.props;
+		const { classes } = this.props;
+		console.log("classes", classes);
 		const { errors } = this.state;
 		console.log("errors", errors);
 
@@ -189,6 +221,37 @@ class Profile extends Component {
 						</Button>
 					</div>
 				}
+				<Snackbar
+					anchorOrigin={{
+						vertical: 'bottom',
+						horizontal: 'left',
+					}}
+					open={this.state.showSuccess}
+					autoHideDuration={6000}
+					onClose={this.handleCloseSuccess}
+				>
+					<SnackbarContent
+						className={classes.success}
+						aria-describedby="client-snackbar"
+						message={
+							<span id="client-snackbar" className={classes.message}>
+								<CheckCircleIcon className={classNames(classes.icon, classes.iconVariant)}/>
+								Profile Updated!
+							</span>
+						}
+						action={[
+							<IconButton
+								key="close"
+								aria-label="Close"
+								color="inherit"
+								className={classes.close}
+								onClick={this.handleCloseSuccess}
+							>
+								<CloseIcon className={classes.icon} />
+							</IconButton>,
+						]}
+					/>
+				</Snackbar>
 			</div>
 		);
 	}
