@@ -31,7 +31,7 @@ export const loginUser = (user) => dispatch => {
         });
 }
 
-export const updateUser = (user) => dispatch => {
+export const updateUser = (user, callback) => dispatch => {
     axios.post('/api/users/update', user)
         .then(res => {
             const { token } = res.data;
@@ -39,6 +39,7 @@ export const updateUser = (user) => dispatch => {
             setAuthToken(token);
             const decoded = jwt_decode(token);
             dispatch(setCurrentUser(decoded));
+            callback(res);
         })
         .catch(err => {
             dispatch({

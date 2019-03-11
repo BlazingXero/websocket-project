@@ -47,6 +47,7 @@ class Profile extends Component {
 				username: '',
 				email: '',
 			},
+			errors: {},
 			currentUserProfile: null
 		}
 		this.handleInputChange = this.handleInputChange.bind(this);
@@ -81,8 +82,12 @@ class Profile extends Component {
 	}
 
 	updateProfile = () => {
-		this.props.updateUser(this.state.user);
-		this.setState({ edit: false })
+		this.props.updateUser(this.state.user, (res) => {
+			console.log("res", res);
+			this.setState({ edit: false })
+
+		});
+		//
 	}
 
 	cancelUpdate = () => {
@@ -94,7 +99,8 @@ class Profile extends Component {
 
 	render() {
 		// const { classes } = this.props;
-		// const { errors } = this.state;
+		const { errors } = this.state;
+		console.log("errors", errors);
 
 		return (
 			<div style={{padding: '20px'}}>
@@ -109,6 +115,8 @@ class Profile extends Component {
 							readOnly: Boolean(!this.state.edit),
 							disableUnderline: Boolean(!this.state.edit)
 						}}
+						error = {!!errors.firstname}
+						helperText={errors.firstname}
 					>
 					</TextField>
 				</div>
@@ -122,6 +130,8 @@ class Profile extends Component {
 							readOnly: Boolean(!this.state.edit),
 							disableUnderline: Boolean(!this.state.edit)
 						}}
+						error = {!!errors.lastname}
+						helperText={errors.lastname}
 					>
 					</TextField>
 				</div>
@@ -135,6 +145,8 @@ class Profile extends Component {
 							readOnly: Boolean(!this.state.edit),
 							disableUnderline: Boolean(!this.state.edit)
 						}}
+						error = {!!errors.username}
+						helperText={errors.username}
 					>
 					</TextField>
 				</div>
