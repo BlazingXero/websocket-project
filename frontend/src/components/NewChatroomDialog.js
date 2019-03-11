@@ -77,9 +77,9 @@ const styles = theme => ({
 	innerWrapper: {
 		width: '200%',
 		position: 'absolute',
-		transitionDuration: '100ms',
+		// transitionDuration: '100ms',
 		transitionTimingFunction: 'cubic-bezier(0.175, 0.665, 0.320, 1), linear',
-		transition: 'left 2s ease',
+		transition: '2s',
 	},
 	pane: {
 		float: 'left',
@@ -107,6 +107,7 @@ class NewChatroomDialog extends Component {
 			title: '',
 			description: '',
 			shareCode: '',
+			stepContent: null,
 		}
 
 		this.changeStep = this.changeStep.bind(this);
@@ -122,6 +123,9 @@ class NewChatroomDialog extends Component {
 	}
 
 	changeStep (step) {
+		if (step !== 'start') {
+			this.setState({ stepContent: step })
+		}
 		this.setState({ step: step })
 	}
 
@@ -227,7 +231,7 @@ class NewChatroomDialog extends Component {
 						</div>
 						<div className={classes.pane}>
 							<DialogTitle id="form-dialog-title">{this.state.step === 'create' ? 'CREATE NEW CHATROOM' : 'JOIN A CHATROOM'}</DialogTitle>
-							{this.state.step === 'create' ?
+							{this.state.stepContent === 'create' ?
 								<DialogContent style={{textAlign: 'center'}}>
 									Create a chatroom and invite your friends
 									<div>
