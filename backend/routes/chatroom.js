@@ -125,24 +125,47 @@ router.post('/create_share_code', (req, res) => {
 })
 
 router.post('/join_using_code', (req, res) => {
-	const code = req.body.code;
+	const shareCode = req.body.shareCode;
 	const userId = req.body.userId;
-	console.log("code", code);
-	ChatroomShareCode.findOne(code, function (err, result) {
+	ChatroomShareCode.findOne({shareCode}, function (err, result) {
 		if (!err) {
-			const chatroomId = result.chatroomId
-			const newChatroomJoined = new ChatroomJoined({
-				chatroomId: chatroomId,
-				userId: userId
-			});
-			newChatroomJoined
-				.save()
-				.then(chatroomJoined => {
-					res.json({chatroomId})
-				});
-
+			if (result) {
+				const chatroomId = result.chatroomId
+				ChatroomJoined.findOne({chatroomId, userId}, function (err, result) {
+					if (!err && !result) {
+						const newChatroomJoined = new ChatroomJoined({
+							chatroomId: chatroomId,
+							userId: userId
+						});
+						newChatroomJoined
+							.save()
+							.then(chatroomJoined => {
+								res.json({chatroomId})
+							});
+					} else {
+						return res.status(400).json({shareCode: 'Already joined chatroom'});
+					}
+				})
+			} else {
+				return res.status(400).json({shareCode: 'Code is invalid'});
+			}
 		}
 	})
+})
+
+router.post('/update_chatroom_data', (req, res) => {
+	const chatroomId = req.body.chatroomId;
+	const messagesRead = req.body.messagesRead;
+	const userId = req.body.userId;
+	ChatroomJoined.updateOne(
+		{ chatroomId, userId },
+		{ $set: {
+			lastRead: new Date(),
+			messagesRead: messagesRead
+		}
+	}, function(err, res) {
+		if (err) throw err;
+  	})
 })
 
 module.exports = router;
