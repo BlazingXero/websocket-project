@@ -50,10 +50,14 @@ class Root extends Component {
 
 	componentDidMount() {
 		if(this.props.auth.isAuthenticated) {
-			this.state.user = this.props.auth.user;
-			Socket.socketRegister(this.state.user.id)
+			// this.state.user = this.props.auth.user;
+			Socket.socketRegister(this.props.auth.user.id)
 		} else {
 			this.props.history.push('/login')
+			if (this.props.auth.user) {
+				console.log("this.props.auth.user", this.props);
+				// Socket.socketUnregister(this.props.auth.user.id)
+			}
 		}
 	}
 
@@ -82,7 +86,7 @@ class Root extends Component {
 	render() {
 		return (
 			<div style={{display: 'flex', height: '100vh'}}>
-				<Sidebar />
+				{this.props.auth.isAuthenticated && (<Sidebar />)}
 				<div style={{flex: '1'}}>
 					<Navbar />
 					<div style={{height: 'calc(100% - 65px)'}}>

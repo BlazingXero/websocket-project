@@ -232,7 +232,7 @@ class NewChatroomDialog extends Component {
 						<div className={classes.pane}>
 							<DialogTitle id="form-dialog-title">{this.state.step === 'create' ? 'CREATE NEW CHATROOM' : 'JOIN A CHATROOM'}</DialogTitle>
 							{this.state.stepContent === 'create' ?
-								<DialogContent style={{textAlign: 'center'}}>
+								<DialogContent style={{ textAlign: 'center', color: orange[700] }}>
 									Create a chatroom and invite your friends
 									<div>
 										<TextField
@@ -277,7 +277,7 @@ class NewChatroomDialog extends Component {
 									</div>
 								</DialogContent>
 							:
-								<DialogContent style={{textAlign: 'center'}}>
+								<DialogContent style={{ textAlign: 'center', color: blue[700 ]}}>
 									Enter a share code below to join an existing chatroom. The code will look somthing like this:
 									<div>
 										<TextField

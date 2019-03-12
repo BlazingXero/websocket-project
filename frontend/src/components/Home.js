@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import _ from 'underscore'
 import { connect } from 'react-redux';
-import { getJoinedChatrooms } from '../actions/chatroom';
+import { getJoinedChatrooms, updateChatroomData } from '../actions/chatroom';
 import { withRouter } from 'react-router-dom';
 import socket from '../actions/socket'
 
@@ -17,6 +17,9 @@ import ListItemText from '@material-ui/core/ListItemText';
 import ListItemAvatar from '@material-ui/core/ListItemAvatar';
 import Avatar from '@material-ui/core/Avatar';
 import Divider from '@material-ui/core/Divider';
+import Badge from '@material-ui/core/Badge';
+
+import lightgreen from '@material-ui/core/colors/lightGreen';
 
 import Chatroom from './Chatroom';
 import NewChatroomDialog from './NewChatroomDialog'
@@ -28,8 +31,14 @@ const styles = theme => ({
 		display: 'flex',
 		height: '100%'
 	},
-	chatroomList: {
+	chatroomListContainer: {
 		flex: '0 1 300px',
+		backgroundColor: '#555'
+	},
+	chatroomList: {
+		'&:hover': {
+			backgroundColor: 'rgba(255, 255, 255, 0.08)'
+		}
 	},
 	chatroomMain: {
 		flex: '1 1 auto'
@@ -65,7 +74,8 @@ const styles = theme => ({
 	},
 	centreIcon: {
 		display: 'block',
-		margin: 'auto'
+		margin: 'auto',
+		color: '#FFF'
 	},
 	newChatroomOption: {
 		border: '1px solid #eee',
@@ -97,6 +107,23 @@ const styles = theme => ({
 		top: '50%',
 		left: '50%',
 		transform: 'translate(-50%, -50%)',
+	},
+	badgeRoot: {
+		width: '100%'
+	},
+	chatroomPrimaryText: {
+		color: '#FFF'
+	},
+	chatroomSecondaryText: {
+		color: '#BBB'
+	},
+	chatroomAvatar: {
+		backgroundColor: '#FFF'
+	},
+	badge: {
+		top: '75%',
+		right: 0,
+		backgroundColor: lightgreen[700],
 	}
 });
 
@@ -187,18 +214,37 @@ class Home extends Component {
 	}
 
 	onMessageReceived = (entry) => {
-		this.setState((prevState, props) => ({
-			chatroomJoined: {
-				...this.state.chatroomJoined,
-				[entry.chat]: {
-					...this.state.chatroomJoined[entry.chat],
-					unreadMessages: prevState.chatroomJoined[entry.chat].unreadMessages + 1
+		if (!this.state.currentChatroom || entry.chat !== this.state.currentChatroom._id) {
+			this.setState((prevState, props) => ({
+				chatroomJoined: {
+					...this.state.chatroomJoined,
+					[entry.chat]: {
+						...this.state.chatroomJoined[entry.chat],
+						unreadMessages: prevState.chatroomJoined[entry.chat].unreadMessages + 1
+					}
 				}
-			}
-		}))
+			}));
+		}
+
+		console.log(this.state.chatroomJoined)
 	}
 
 	loadChatroom = (chatroom) => {
+		this.setState((prevState, props) => ({
+			chatroomJoined: {
+				...this.state.chatroomJoined,
+				[chatroom._id]: {
+					...this.state.chatroomJoined[chatroom._id],
+					unreadMessages: 0
+				}
+			}
+		}));
+
+		this.props.updateChatroomData({
+			chatroomId: chatroom._id,
+			userId: this.props.auth.user.id,
+			messagesRead: chatroom.chatHistory.length
+		});
 		this.setState({currentChatroom: chatroom})
 	}
 
@@ -216,20 +262,30 @@ class Home extends Component {
 
 		return (
 			<div className={classes.chatroomContainer}>
-				<div className={classes.chatroomList}>
+				<div className={classes.chatroomListContainer}>
 					<List component="nav">
 						{Object.keys(this.state.chatroomJoined).map(
 							(chatroomId, i) => {
 								return (
 									<div key={i} onClick={() => this.loadChatroom(this.state.chatroomJoined[chatroomId])}>
-										<ListItem button >
+										<ListItem button className={classes.chatroomList}>
 											<ListItemAvatar>
-												<Avatar alt={this.state.chatroomJoined[chatroomId].title} src={"icons/"+this.state.chatroomJoined[chatroomId].icon+".svg"} />
+												<Avatar
+													alt={this.state.chatroomJoined[chatroomId].title}
+													src={"icons/"+this.state.chatroomJoined[chatroomId].icon+".svg"}
+													className={classes.chatroomAvatar}
+												/>
 											</ListItemAvatar>
-											<ListItemText
-												primary={`${this.state.chatroomJoined[chatroomId].title}`}
-												secondary={`${this.state.chatroomJoined[chatroomId].description}`}
-											/>
+											<Badge color="primary" badgeContent={this.state.chatroomJoined[chatroomId].unreadMessages} classes={{ root: classes.badgeRoot, badge: classes.badge }}>>
+												<ListItemText
+													primary={`${this.state.chatroomJoined[chatroomId].title}`}
+													secondary={`${this.state.chatroomJoined[chatroomId].description}`}
+													classes={{
+														primary: classes.chatroomPrimaryText,
+														secondary: classes.chatroomSecondaryText,
+													}}
+												/>
+											</Badge>
 										</ListItem>
 										<Divider />
 									</div>
@@ -270,4 +326,4 @@ const mapStateToProps = (state) => ({
 	errors: state.errors
 })
 
-export default withRouter(connect(mapStateToProps,{ getJoinedChatrooms })(withStyles(styles)(Home)))
+export default withRouter(connect(mapStateToProps,{ getJoinedChatrooms, updateChatroomData })(withStyles(styles)(Home)))

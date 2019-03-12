@@ -72,6 +72,11 @@ module.exports = function (client, clientManager, chatroomManager) {
 		})
 	}
 
+	function handleUnregister(userName, callback) {
+		clientManager.removeClient(client)
+		chatroomManager.removeClient(client, clientManager)
+	}
+
 	function handleJoin(chatroomId, callback) {
 		const createEntry = () => ({ event: `joined` })
 
@@ -158,6 +163,7 @@ module.exports = function (client, clientManager, chatroomManager) {
 
 	return {
 		handleRegister,
+		handleUnregister,
 		handleNewChatroom,
 		handleJoin,
 		handleLeave,

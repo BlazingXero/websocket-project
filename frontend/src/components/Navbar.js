@@ -5,8 +5,12 @@ import { connect } from 'react-redux';
 import { logoutUser } from '../actions/authentication';
 import { withRouter } from 'react-router-dom';
 
-import Avatar from '@material-ui/core/Avatar';
+import AppBar from '@material-ui/core/AppBar';
+import Toolbar from '@material-ui/core/Toolbar';
+import Typography from '@material-ui/core/Typography';
 import IconButton from '@material-ui/core/IconButton';
+import MenuIcon from '@material-ui/icons/Menu';
+import Avatar from '@material-ui/core/Avatar';
 import MenuItem from '@material-ui/core/MenuItem';
 import Menu from '@material-ui/core/Menu';
 
@@ -75,12 +79,17 @@ class Navbar extends Component {
 			</ul>
 		)
 		return(
-			<nav className="navbar navbar-expand-lg navbar-light bg-light">
-				<Link className="navbar-brand" to={redirectTo}>Home</Link>
-				<div className="collapse navbar-collapse" id="navbarSupportedContent">
-					{isAuthenticated ? authLinks : ''}
-				</div>
-			</nav>
+			<AppBar position="static">
+				<Toolbar>
+					<Typography variant="h6" color="inherit">
+						Chatroom
+					</Typography>
+					{isAuthenticated && (
+						authLinks
+					)}
+				</Toolbar>
+			</AppBar>
+
 		)
 	}
 }

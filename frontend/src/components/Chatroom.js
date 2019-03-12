@@ -27,6 +27,7 @@ import Dialog from '@material-ui/core/Dialog';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import InputAdornment from '@material-ui/core/InputAdornment';
+import Chip from '@material-ui/core/Chip';
 
 import MessageIcon from '@material-ui/icons/Message';
 import KeyboardArrowDown from '@material-ui/icons/KeyboardArrowDown';
@@ -252,7 +253,10 @@ class Chatroom extends React.Component {
 	}
 
 	onMessageReceived(entry) {
-		this.updateChatHistory(entry)
+		if (this.state.chatroom && this.state.chatroom._id === entry.chat) {
+			this.updateChatHistory(entry)
+		}
+
 	}
 
 	userOnlineStatusChange ({user, status}) {
@@ -339,12 +343,22 @@ class Chatroom extends React.Component {
 									({ user, message, time, event }, i) => {
 										let timeText = '';
 										let dateDivider = '';
+										let dateText = '';
 										if (time) {
-											let thisDate = moment(time).format("MM/DD/YY");
-											if (currentDate !== thisDate) {
-
-												dateDivider = <div style={{ textAlign: 'center' }}><span className={classes.dateDivider}>{thisDate}</span></div>
-												currentDate = thisDate
+											let thisDate = moment(time).endOf('day');
+											if (currentDate !== thisDate.format("MM/DD/YY")) {
+												const daysDiff = moment(new Date()).endOf('day').diff(thisDate, 'days');
+												if (daysDiff === 0) {
+													dateText = 'Today';
+												} else if (daysDiff === 1) {
+													dateText = 'Yesterday';
+												} else if (daysDiff <= 7 ) {
+													dateText = moment(time).endOf('day').format("dddd");
+												} else {
+													dateText = moment(time).endOf('day').format("MM/DD/YY");
+												}
+												dateDivider = <div style={{ textAlign: 'center', marginTop: '10px' }}><Chip label={dateText} color="primary" /></div>
+												currentDate = thisDate.format("MM/DD/YY")
 											} else {
 												dateDivider = '';
 											}
@@ -385,6 +399,10 @@ class Chatroom extends React.Component {
 								fullWidth
 								onChange={this.onInput}
 								margin="normal"
+								InputProps={{
+									disabled: Boolean(!this.state.chatroom),
+									// disableUnderline: Boolean(!this.state.edit)
+								}}
 							/>
 							<Fab color="primary" aria-label="Add" className={classes.fab} onClick={(event) => this.onSendMessage(event)}>
 								<MessageIcon />

@@ -56,6 +56,7 @@ io.on('connection', function (client) {
 
 	const {
 		handleRegister,
+		handleUnregister,
 		handleJoin,
 		handleLeave,
 		handleMessage,
@@ -71,6 +72,8 @@ io.on('connection', function (client) {
 	} = makeHandlers(client, clientManager, chatroomManager)
 
 	client.on('register', handleRegister)
+
+	client.on('unregister', handleUnregister)
 
 	client.on('join', handleJoin)
 
