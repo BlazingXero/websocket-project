@@ -109,6 +109,7 @@ const styles = theme => ({
 		transform: 'translate(-50%, -50%)',
 	},
 	badgeRoot: {
+		marginLeft: '5px',
 		width: '100%'
 	},
 	chatroomPrimaryText: {
@@ -203,7 +204,7 @@ class Home extends Component {
 				if (chatroom.creatorUsername === username) {
 					chatroom.creatorUsername = "Me";
 				}
-				const numMessages = _.compact(_.pluck(chatroom.chatHistory, 'message')).length
+				const numMessages = chatroom.chatHistory.length
 				chatroom.unreadMessages = numMessages - chatroom.messagesRead;
 				Socket.socketEnterChatroom(chatroom._id)
 				chatroomDetails[chatroom._id] = chatroom
@@ -276,7 +277,7 @@ class Home extends Component {
 													className={classes.chatroomAvatar}
 												/>
 											</ListItemAvatar>
-											<Badge color="primary" badgeContent={this.state.chatroomJoined[chatroomId].unreadMessages} classes={{ root: classes.badgeRoot, badge: classes.badge }}>>
+											<Badge color="primary" badgeContent={this.state.chatroomJoined[chatroomId].unreadMessages} classes={{ root: classes.badgeRoot, badge: classes.badge }}>
 												<ListItemText
 													primary={`${this.state.chatroomJoined[chatroomId].title}`}
 													secondary={`${this.state.chatroomJoined[chatroomId].description}`}

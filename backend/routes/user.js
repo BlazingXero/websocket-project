@@ -7,6 +7,8 @@ const passport = require('passport');
 const validateRegisterInput = require('../validation/register');
 const validateLoginInput = require('../validation/login');
 const validateUpdateInput = require('../validation/update');
+require('../handlers/passport')();
+// var { generateToken, sendToken } = require('../utils/token.utils');
 
 const User = require('../models/User');
 
@@ -106,6 +108,34 @@ router.post('/login', (req, res) => {
 				});
 		});
 });
+
+router.post('/google_login', passport.authenticate('google-token', {session: false}), (req, res, next) => {
+	if (!req.user) {
+        return res.send(401, 'User Not Authenticated');
+    }
+
+    const payload = {
+		id: req.user.id,
+		firstname: req.user.firstname,
+		lastname: req.user.lastname,
+		username: req.user.username,
+		email: req.user.email,
+		avatar: req.user.avatar,
+		googleLogin: true
+	}
+
+	jwt.sign(payload, 'secret', {
+		expiresIn: 3600
+	}, (err, token) => {
+		if(err) console.error('There is some error in token', err);
+		else {
+			res.json({
+				success: true,
+				token: `Bearer ${token}`
+			});
+		}
+	});
+})
 
 router.post('/update', (req, res) => {
 	const { errors, isValid } = validateUpdateInput(req.body);

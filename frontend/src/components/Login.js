@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
-import { loginUser } from '../actions/authentication';
-// import socket from '../actions/socket'
+import GoogleLogin from 'react-google-login';
+import { loginUser, googleLogin } from '../actions/authentication';
 
 import { withStyles } from '@material-ui/core/styles';
 import TextField from '@material-ui/core/TextField';
@@ -12,10 +12,43 @@ import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import IconButton from '@material-ui/core/IconButton';
 import Button from '@material-ui/core/Button';
 
+import loginConfig from '../config/loginConfig.json';
+
 const styles = theme => ({
-  textField: {
-	width: '100%',
-  },
+	textField: {
+		width: '100%',
+	},
+	hrText: {
+		lineHeight: '1em',
+		position: 'relative',
+		outline: '0',
+		border: '0',
+		color: 'black',
+		textAlign: 'center',
+		height: '1.5em',
+		opacity: '.5',
+		'&:before': {
+			content: '""',
+			// use the linear-gradient for the fading effect
+			// use a solid background color for a solid bar
+			background: 'linear-gradient(to right, transparent, #818078, transparent)',
+			position: 'absolute',
+			left: '0',
+			top: '50%',
+			width: '100%',
+			height: '1px',
+		},
+		'&:after': {
+			content: 'attr(data-content)',
+			position: 'relative',
+			display: 'inline-block',
+			padding: '0.5em',
+			lineHeight: '0.5em',
+			// this is really the only tricky part, you need to specify the background color of the container element...
+			color: '#818078',
+			backgroundColor: '#fcfcfa',
+		}
+	}
 });
 
 class Login extends Component {
@@ -60,6 +93,15 @@ class Login extends Component {
 		if(this.props.auth.isAuthenticated) {
 			this.props.history.push('/');
 		}
+	}
+
+	responseGoogle = (response) => {
+		const tokenBlob = new Blob([JSON.stringify({access_token: response.accessToken}, null, 2)], {type : 'application/json'});
+		this.props.googleLogin(tokenBlob)
+	}
+
+	onFailure = (error) => {
+		console.log(error)
 	}
 
 	componentWillReceiveProps(nextProps) {
@@ -144,6 +186,13 @@ class Login extends Component {
 						Register
 					</Button>
 				</div>
+				<hr className={classes.hrText} data-content="OR" />
+				<GoogleLogin
+					clientId={loginConfig.GOOGLE_CLIENT_ID}
+					buttonText="Login"
+					onSuccess={this.responseGoogle}
+					onFailure={this.onFailure}
+				/>
 			</form>
 		</div>
 		)
@@ -161,4 +210,4 @@ const mapStateToProps = (state) => ({
 	errors: state.errors
 })
 
-export  default connect(mapStateToProps, { loginUser })(withStyles(styles)(Login))
+export  default connect(mapStateToProps, { loginUser, googleLogin })(withStyles(styles)(Login))

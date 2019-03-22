@@ -31,6 +31,23 @@ export const loginUser = (user) => dispatch => {
         });
 }
 
+export const googleLogin = (tokenBlob) => dispatch => {
+    axios.post('/api/users/google_login', tokenBlob, { headers: { 'Content-Type': 'application/json',}})
+        .then(res => {
+            const { token } = res.data;
+            localStorage.setItem('jwtToken', token);
+            setAuthToken(token);
+            const decoded = jwt_decode(token);
+            dispatch(setCurrentUser(decoded));
+        })
+        .catch(err => {
+            dispatch({
+                type: GET_ERRORS,
+                payload: err.response.data
+            });
+        });
+}
+
 export const updateUser = (user, callback) => dispatch => {
     axios.post('/api/users/update', user)
         .then(res => {
