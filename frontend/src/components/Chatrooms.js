@@ -8,9 +8,6 @@ import socket from '../actions/socket'
 
 import { withStyles } from '@material-ui/core/styles';
 import Dialog from '@material-ui/core/Dialog';
-
-import AddCircleOutlinedIcon from '@material-ui/icons/AddCircleOutlined';
-
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
@@ -18,8 +15,9 @@ import ListItemAvatar from '@material-ui/core/ListItemAvatar';
 import Avatar from '@material-ui/core/Avatar';
 import Divider from '@material-ui/core/Divider';
 import Badge from '@material-ui/core/Badge';
-
 import lightgreen from '@material-ui/core/colors/lightGreen';
+
+import AddCircleOutlinedIcon from '@material-ui/icons/AddCircleOutlined';
 
 import Chatroom from './Chatroom';
 import NewChatroomDialog from './NewChatroomDialog'

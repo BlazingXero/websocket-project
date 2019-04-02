@@ -21,8 +21,6 @@ import Divider from '@material-ui/core/Divider';
 import TextField from '@material-ui/core/TextField';
 import Fab from '@material-ui/core/Fab';
 import IconButton from '@material-ui/core/IconButton';
-import Menu from '@material-ui/core/Menu'
-import MenuItem from '@material-ui/core/MenuItem';
 import Dialog from '@material-ui/core/Dialog';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
@@ -30,7 +28,6 @@ import InputAdornment from '@material-ui/core/InputAdornment';
 import Chip from '@material-ui/core/Chip';
 
 import MessageIcon from '@material-ui/icons/Message';
-import KeyboardArrowDown from '@material-ui/icons/KeyboardArrowDown';
 import ShareIcon from '@material-ui/icons/Share';
 import ExitToApp from '@material-ui/icons/ExitToApp';
 import FileCopy from '@material-ui/icons/FileCopy';
@@ -113,6 +110,7 @@ const styles = theme => ({
 	memberList: {
 		width: '20%',
 		height: '100%',
+		padding: '15px'
 	},
 	closeButton: {
 		position: 'absolute',
@@ -136,7 +134,9 @@ const styles = theme => ({
 		color: '#bbb',
 	},
 	chatActions: {
-		flex: '0 0 30px'
+		display: 'inline-block',
+   		marginLeft: '5px',
+   		cursor: 'pointer'
 	},
 	centreIcon: {
 		display: 'block',
@@ -154,7 +154,6 @@ class Chatroom extends React.Component {
 			chatHistory: [],
 			user: null,
 			input: '',
-			anchorEl: null,
 			members: [],
 			showMembers: true,
 			shareCodeDialogOpen: false,
@@ -184,6 +183,7 @@ class Chatroom extends React.Component {
 	}
 
 	componentWillUnmount() {
+		console.log("componentWillUnmount");
 		Socket.unregisterHandler();
 		if (this.state.chatroom && this.state.chatroom._id) {
 			Socket.socketExitChatroom(this.state.chatroom._id);
@@ -197,7 +197,15 @@ class Chatroom extends React.Component {
 	}
 
 	componentWillReceiveProps = (nextProps) => {
-		if (nextProps.chatroom) {
+		if (nextProps.chatroom && (!this.state.chatroom || this.state.chatroom._id !== nextProps.chatroom._id)) {
+			if (this.state.chatroom) {
+				this.props.updateChatroomData({
+					chatroomId: this.state.chatroom._id,
+					userId: this.state.user.id,
+					messagesRead: this.state.chatHistory.length
+				});	
+			}
+			
 			this.setState({ chatroom: null });
 			this.setState({ chatHistory: [] });
 			this.setState({ members: [] });
@@ -256,7 +264,6 @@ class Chatroom extends React.Component {
 		if (this.state.chatroom && this.state.chatroom._id === entry.chat) {
 			this.updateChatHistory(entry)
 		}
-
 	}
 
 	userOnlineStatusChange ({user, status}) {
@@ -288,14 +295,6 @@ class Chatroom extends React.Component {
 		this.panel.scrollTo(0, this.panel.scrollHeight)
 	}
 
-	openMenuOptions = (event) => {
-		this.setState({ anchorEl: event.currentTarget });
-	}
-
-	handleClose = () => {
-		this.setState({ anchorEl: null });
-	}
-
 	createShareCode = () => {
 		this.props.createShareCode(this.state.chatroom._id, (response) => {
 			if (response && response.data) {
@@ -315,7 +314,6 @@ class Chatroom extends React.Component {
 
 	render() {
 		const { classes } = this.props;
-		const { anchorEl } = this.state;
 
 		let currentDate;
 
@@ -329,8 +327,16 @@ class Chatroom extends React.Component {
 							</p>
 						</div>
 						{this.state.chatroom ?
-							<div className={classes.chatActions}>
-								<PeopleIcon className={classes.centreIcon} onClick={this.toggleShowMembers}/>
+							<div style={{ flex: '0 0 144px' }}>
+								<IconButton onClick={this.createShareCode}>
+									<ShareIcon/>
+								</IconButton>
+								<IconButton onClick={this.toggleShowMembers}>
+									<PeopleIcon/>
+								</IconButton>								
+								<IconButton onClick={this.leaveChat}>
+									<ExitToApp />
+								</IconButton>
 							</div>
 						:
 							''
@@ -412,11 +418,6 @@ class Chatroom extends React.Component {
 				</div>
 				{ this.state.chatroom && this.state.showMembers ?
 					<div className={classes.memberList}>
-						<div style={{ 'textAlign': 'right' }}>
-							<IconButton aria-label="Settings" onClick={this.openMenuOptions}>
-								<KeyboardArrowDown fontSize="small" />
-							</IconButton>
-						</div>
 						<div>
 							ONLINE ({_.where(this.state.members, {online: true}).length}):
 							<List className={classes.root}>
@@ -463,26 +464,6 @@ class Chatroom extends React.Component {
 				:
 					null
 				}
-				<Menu
-					id="long-menu"
-					anchorEl={anchorEl}
-					open={Boolean(anchorEl)}
-					onClose={this.handleClose}
-					anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-					transformOrigin={{
-						vertical: 'top',
-						horizontal: 'right',
-					}}
-				>
-					<MenuItem onClick={() => this.createShareCode()}>
-						<ShareIcon />
-						<ListItemText inset primary="Create share code" />
-					</MenuItem>
-					<MenuItem onClick={() => this.leaveChat()}>
-						<ExitToApp />
-						<ListItemText inset primary="Leave chatroom" />
-					</MenuItem>
-				</Menu>
 				<Dialog
 					open={this.state.shareCodeDialogOpen}
 					onClose={this.handleShareCodeDialogClose}

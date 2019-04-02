@@ -163,8 +163,14 @@ router.post('/update_chatroom_data', (req, res) => {
 			lastRead: new Date(),
 			messagesRead: messagesRead
 		}
-	}, function(err, res) {
-		if (err) throw err;
+		
+	}, function(err, result) {
+		if (err) {
+			throw err;
+			return res.status(400).json(err);
+		}
+		
+		res.json({chatroomId})
   	})
 })
 

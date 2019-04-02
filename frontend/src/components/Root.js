@@ -12,7 +12,7 @@ import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import Register from './Register';
 import Login from './Login';
-import Home from './Home';
+import Chatrooms from './Chatrooms';
 import Chatroom from './Chatroom';
 import Profile from './Profile';
 
@@ -90,11 +90,7 @@ class Root extends Component {
 				<div style={{flex: '1'}}>
 					<Navbar />
 					<div style={{height: 'calc(100% - 65px)'}}>
-						<Route exact path="/" render={
-							props => (
-								<Home />
-							)
-						} />
+						<Route exact path="/chatroom" component={ Chatrooms } />
 						<Route exact path="/register" component={ Register } />
 						<Route exact path="/login" component={ Login } />
 						<Route exact path="/profile" component={ Profile } />

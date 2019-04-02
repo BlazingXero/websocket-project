@@ -23,7 +23,7 @@ if(localStorage.jwtToken) {
 		store.dispatch(logoutUser());
 		window.location.href = '/login'
 	} else {
-		console.log("logged in")
+		// console.log("logged in")
 		// socket().socketRegister(decoded.id)
 	}
 }

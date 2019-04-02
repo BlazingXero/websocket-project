@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-// import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { logoutUser } from '../actions/authentication';
@@ -42,7 +42,7 @@ class Sidebar extends Component {
 					HEADER
 				</div>
 				<List component="nav">
-					<ListItem button>
+					<ListItem button component={Link} to="/chatroom">
 						<ListItemIcon>
 							<ChatIcon />
 						</ListItemIcon>
